@@ -10,7 +10,10 @@ import imaplib
 import email
 import traceback
 import pandas
+import os
 from email.message import EmailMessage
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 
 
 # In[265]:
@@ -27,6 +30,10 @@ SUBJECT_SHARED_KEY = '[SHARED_KEY]' #EMAIL SENDING SHARED KEY HAS SUBJECT  [SECU
 SUBJECT_PUBLIC_KEY = '[PUBLIC_KEY]' #EMAIL SENDING PUBLIC KEY HAS SUBJECT  [SECUREMAIL][PUBLIC_KEY]
 SUBJECT_REQUEST_PUBLIC_KEY = '[REQUEST_PUBLIC_KEY]' #EMAIL REQUESTING PUBLIC KEY HAS SUBJECT  [SECUREMAIL][REQUEST_PUBLIC_KEY]
 
+
+KEY_PARAMETERS = dh.generate_parameters(generator=2, key_size=2048)         # parameters to use for key generation later
+SECRET_KEY = b''
+PUBLIC_KEY = b''
 
 # In[123]:
 
@@ -204,18 +211,35 @@ def main():
     user = (username, password)
     
     while(true):
-        menu = input("Please select: \n1. Send Email \n2. Read Email \n3.Quit")
+        menu = input("Please select: \n1. Send Email \n2. Read Email \n3. Generate Keys  \n4. Quit")
         match menu:
             case 1: 
                 #Send Email
                 print("Please create a new email.\n")
                 receiver = input("To: ")
+                receiver_name = receiver.replace('spring2022@gmail.com', '')              # will be used for key checking
                 subject = input("Subject: ")
                 body = input("Content: ")
                 
                 #check if key exchange is required <--AL
                 #key exchange:
                 #should store private key in some place related to bob's email address 
+
+                # make a list of all the users whose public keys are available already
+                saved_keys = []
+                for j in os.listdir():
+                    if j.endswith('.txt'):
+                        user_name = j.replace('.txt', '')
+                        saved_keys.append(user_name)
+
+                if receiver_name not in saved_keys:
+                    print('Key for user %s not found. Please have them send their public key file\n.' % receiver)
+                    break
+                
+                # get the public key of the current recipient 
+                key_file = open('%s_pub.txt' % receiver_name) 
+                receiver_pub = key_file.read()
+                key_file.close()
                                 
                 #Encryption: <--TLY
                 #encrypt subject and body
@@ -231,6 +255,22 @@ def main():
                 #Aiden: please use the function get_key() code to get the encrypted key from server 
                 #and use your function to decrypt it                   
                 
+                sender = cMail(0)
+                sender_name = sender.replace('spring2022@gmail.com', '')              # will be used for key checking
+
+                saved_keys = []
+                for j in os.listdir():
+                    if j.endswith('.txt'):
+                        user_name = j.replace('.txt', '')
+                        saved_keys.append(user_name)
+
+                if sender_name not in saved_keys:
+                    print('Key for user %s not found. Please have them send their public key file\n.' % receiver)
+                    break
+
+                key_list_index = saved_keys.index(sender_name)
+                sender_pub_key = saved_keys[key_list_index]
+
                 #Decryption: <--TLY
                 #decrypt cSubject=cMail[1] and cBody=cMail[3]
                 #return subject and body
@@ -242,7 +282,51 @@ def main():
                       '\n' + body,
                       '\n----------------EMAIL ENDS-----------------\n')
             
-            case 3: #Quit
+            case 3: #Generate Keys
+                # generate secret key
+                sec_key = rsa.generate_private_key(
+                    public_exponent=65537,
+                    key_size=2048
+                )
+
+                # encode secret key to Byte type
+                sec_key_encoded = sec_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                )
+
+                # generate public key from secret key and encode to Byte type
+                pub_key_encoded = sec_key.public_key().public_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                )
+
+                # convert Byte type keys to String for processing
+                sec_key_string = sec_key_encoded.decode()
+                pub_key_string = pub_key_encoded.decode()
+
+                # remove the begin/end key text from the RSA keys
+                trimsec = sec_key_string.replace('-----BEGIN PRIVATE KEY-----', '')
+                trimsec2 = trimsec.replace('-----END PRIVATE KEY-----', '')
+                SECRET_KEY = trimsec2
+
+                trimpub = pub_key_string.replace('-----BEGIN PUBLIC KEY-----', '')
+                trimpub2 = trimpub.replace('-----END PUBLIC KEY-----', '')
+                PUBLIC_KEY = trimpub2
+
+                # get the user's name, then save the key files using that info
+                name = input('Enter your name: ').lower()
+                sec_key_file = open('%s_sec.txt' % name, 'x')
+                sec_key_file.write(SECRET_KEY)
+                sec_key_file.close()
+                
+                pub_key_file = open('%s_pub.txt' % name, 'x')
+                pub_key_file.write(PUBLIC_KEY)
+                pub_key_file.close()
+                
+
+            case 4: #Quit
                 print("Quiting [SECUREMAIL]...")
                 break
     

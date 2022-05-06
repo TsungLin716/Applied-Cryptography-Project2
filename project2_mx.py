@@ -199,7 +199,47 @@ def get_key(user, sentFrom, keyName):
     
     return sharedKey
     
+def generate_keys(name):
+    # generate secret key
+    sec_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048
+    )
 
+    # encode secret key to Byte type
+    sec_key_encoded = sec_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    # generate public key from secret key and encode to Byte type
+    pub_key_encoded = sec_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    # convert Byte type keys to String for processing
+    sec_key_string = sec_key_encoded.decode()
+    pub_key_string = pub_key_encoded.decode()
+
+    # remove the begin/end key text from the RSA keys
+    trimsec = sec_key_string.replace('-----BEGIN PRIVATE KEY-----', '')
+    trimsec2 = trimsec.replace('-----END PRIVATE KEY-----', '')
+    SECRET_KEY = trimsec2
+
+    trimpub = pub_key_string.replace('-----BEGIN PUBLIC KEY-----', '')
+    trimpub2 = trimpub.replace('-----END PUBLIC KEY-----', '')
+    PUBLIC_KEY = trimpub2
+
+    # save key files using the user's name
+    sec_key_file = open('%s_sec.txt' % name, 'x')
+    sec_key_file.write(SECRET_KEY)
+    sec_key_file.close()
+    
+    pub_key_file = open('%s_pub.txt' % name, 'x')
+    pub_key_file.write(PUBLIC_KEY)
+    pub_key_file.close()
 
 # In[ ]:
 
@@ -209,6 +249,18 @@ def main():
     username = input("Please enter your gmail username: ")
     password = input("Please enter your password: ")
     user = (username, password)
+    name_trimmed = username.replace('@gmail.com', '') 
+
+    saved_keys = []
+    for j in os.listdir():
+        if j.endswith('.txt'):
+            user_name = j.replace('.txt', '')
+            saved_keys.append(user_name)
+
+    if name_trimmed not in saved_keys:                  # user doesn't have keys generated yet 
+        print('Performing first-time key generation...\n.')
+        generate_keys(name_trimmed)
+        
     
     while(true):
         menu = input("Please select: \n1. Send Email \n2. Read Email \n3. Generate Keys  \n4. Quit")
@@ -282,51 +334,7 @@ def main():
                       '\n' + body,
                       '\n----------------EMAIL ENDS-----------------\n')
             
-            case 3: #Generate Keys
-                # generate secret key
-                sec_key = rsa.generate_private_key(
-                    public_exponent=65537,
-                    key_size=2048
-                )
-
-                # encode secret key to Byte type
-                sec_key_encoded = sec_key.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption()
-                )
-
-                # generate public key from secret key and encode to Byte type
-                pub_key_encoded = sec_key.public_key().public_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PublicFormat.SubjectPublicKeyInfo
-                )
-
-                # convert Byte type keys to String for processing
-                sec_key_string = sec_key_encoded.decode()
-                pub_key_string = pub_key_encoded.decode()
-
-                # remove the begin/end key text from the RSA keys
-                trimsec = sec_key_string.replace('-----BEGIN PRIVATE KEY-----', '')
-                trimsec2 = trimsec.replace('-----END PRIVATE KEY-----', '')
-                SECRET_KEY = trimsec2
-
-                trimpub = pub_key_string.replace('-----BEGIN PUBLIC KEY-----', '')
-                trimpub2 = trimpub.replace('-----END PUBLIC KEY-----', '')
-                PUBLIC_KEY = trimpub2
-
-                # get the user's name, then save the key files using that info
-                name = input('Enter your name: ').lower()
-                sec_key_file = open('%s_sec.txt' % name, 'x')
-                sec_key_file.write(SECRET_KEY)
-                sec_key_file.close()
-                
-                pub_key_file = open('%s_pub.txt' % name, 'x')
-                pub_key_file.write(PUBLIC_KEY)
-                pub_key_file.close()
-                
-
-            case 4: #Quit
+            case 3: #Quit
                 print("Quiting [SECUREMAIL]...")
                 break
     

@@ -11,6 +11,10 @@ import email
 import traceback
 import pandas
 from email.message import EmailMessage
+from cryptography.fernet import Fernet 
+from cryptography.hamzat.primitives import hashes
+from cryptography.hamzat.primitives.kdf.pdkdf2 import PBKDF2HMAC
+
 
 
 # In[265]:
@@ -191,7 +195,45 @@ def get_key(user, sentFrom, keyName):
     server.logout()
     
     return sharedKey
-    
+
+# generate a key(for message encryption) and store it into a file
+def generate_key():
+	key = Fernet.generate_key()
+	with open("secret.key", "wb") as key_file:
+		key_file.write(key)
+
+
+# load the previously generated key
+def load_key():
+
+	return open("secret.key", "rb").read()
+
+# Encrypts a message
+def encrypt_message(message):
+	key = load_key()
+	encoded_message = message.encode()
+	f = Fernet(key)
+	encrypted_message = f.encrypt(encoded_message)
+
+	return encrypted_message
+
+	#print(encrypted_message)
+
+# Decrypts a message
+def decrypt_message(encrypted_message):
+	key = load_key()
+	f = Fernet(key)
+	decrypted_message = f.decrypt(encrypted_message)
+
+	return decrypted_message
+
+
+	#print(decrypted_message.decode())
+
+
+
+
+
 
 
 # In[ ]:
@@ -218,8 +260,11 @@ def main():
                 #should store private key in some place related to bob's email address 
                                 
                 #Encryption: <--TLY
-                #encrypt subject and body
-                #return cSubject, cBody
+                #encrypt body
+                #return cBody
+
+                cBody = encrypt_message(body)
+
                 
                 send(user, receiver, cSubject, cBody)
                 
@@ -232,9 +277,11 @@ def main():
                 #and use your function to decrypt it                   
                 
                 #Decryption: <--TLY
-                #decrypt cSubject=cMail[1] and cBody=cMail[3]
-                #return subject and body
+                #decrypt cBody=cMail[3]
+                #return body
                 
+                cBody = cMail[3]
+                body = decrypt_message(cBody)
                 print('\n----------------EMAIL STARTS---------------\n',
                       'From: ' + cMail[0] + '\n', 
                       'Subject: ' + subject + '\n',

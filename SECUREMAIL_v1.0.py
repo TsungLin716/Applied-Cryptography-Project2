@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# #Alice's account
+# username: refer to README file
+# password: refer to README file
 
-# In[1]:
-
+# 
+# #Bob's account
+# username: refer to README file
+# password: refer to README file
 
 import smtplib
 import time
@@ -26,10 +31,12 @@ from cryptography.fernet import Fernet
 from cryptography.exceptions import InvalidSignature
 
 
-# In[2]:
-
-
 ###---CONSTANT---###
+ALICE_USER = 'alicespring2022@gmail.com'
+ALICE_PSWD = '!AliceX2022'
+
+BOB_USER = 'bobspring2022@gmail.com'
+BOB_PSWD = '!BobX2022'
 
 SUBJECT_PREFIX = '[SECUREMAIL]'     #ALL EMAILS NEED THIS PREFIX
 SUBJECT_SHARED_KEY = '[SHARED_KEY]' #EMAIL SENDING SHARED KEY HAS SUBJECT  [SECUREMAIL][SHARED_KEY]
@@ -41,10 +48,8 @@ FILENAME_SUFFIX_SHARED = '_shared'
 FILENAME_SUFFIX_SEC = '_sec'
 
 TTL = 5 #Exception will be raised when exceeding TTL
-MAX_ATTEMPT = 50  #Time out if exceeding MAX_ATTEMPT
+MAX_ATTEMPT = 150  #Time out if exceeding MAX_ATTEMPT
 
-
-# In[3]:
 
 
 ###---INTERACTION WITH GMAIL SERVER---###
@@ -95,7 +100,7 @@ def send(user, receiver, subject, message):
         server.send_message(msg)
         print('Sent!')
     except Exception as e:
-        traceback.print_exc() 
+        #traceback.print_exc() 
         print(str(e))
     
     server.quit()
@@ -107,10 +112,10 @@ def get_email_list(server):
     try:
         server.select('inbox')
         res, mail_ids = server.search(None, 'SUBJECT', SUBJECT_PREFIX) #CHANGE ACCORDINGLY
-        print(mail_ids)
+        #print(mail_ids)
         id_list = mail_ids[0].split()
     except Exception as e:
-        traceback.print_exc() 
+        #traceback.print_exc() 
         print(str(e)) 
         
     mailList = []
@@ -165,6 +170,8 @@ def read(user):
     print('\n---------------------EMAIL LIST--------------------\n',
          '--- Email ID --- From --- Subject --- Date ---\n')
     for item in mailList:
+        if (SUBJECT_SHARED_KEY in item[2]) or (SUBJECT_PUBLIC_KEY in item[2]) or (SUBJECT_REQUEST_PUBLIC_KEY in item[2]):
+            continue
         print(item, '\n')
     
     eid = input("Select an email id to read: ")
@@ -202,11 +209,6 @@ def get_key_from_email(user, sentFrom, keyName):
     server.logout()
     
     return key
-    
-
-
-# In[4]:
-
 
 ###---ASYMMETRIC ENCRYPTION AND DECRYPTION---###
 #generate and store private key
@@ -317,9 +319,6 @@ def verify_signature(public_key, message, signature):
     return True   
 
 
-# In[11]:
-
-
 ###---SYMMETRIC ENCRYPTION AND DECRYPTION---###
 # generate shared_key(for message encryption) and store it into a file
 def generate_shared_key(username):
@@ -380,9 +379,6 @@ def verify_timestamp(timestamp, emailtime, ttl):
         return True
 
 
-# In[9]:
-
-
 ###---KEY EXCHANGE HANDLING---###
 def key_exchange(user, receiver):   
     #check if key exchange is necessary
@@ -390,7 +386,7 @@ def key_exchange(user, receiver):
         #scan if there's unseen pk request from receiver
         body = get_key_from_email(user, receiver, SUBJECT_REQUEST_PUBLIC_KEY)
         if body == None:
-            print("Please make sure the other party join connection in 60sec.")
+            print("Please make sure the other party join connection in 5 mins.")
             shared_key = key_exchange_request(user, receiver)            
         else: 
             shared_key = key_exchange_accept(user, receiver)        
@@ -408,7 +404,7 @@ def key_exchange_request(user, receiver):
     #loop checking if public key is received
     attempt = 0
     while(True):
-        time.sleep(1)
+        time.sleep(2)
         #print("attemp" + str(attempt))        
         body = get_key_from_email(user, receiver, SUBJECT_PUBLIC_KEY)
         if body == None:
@@ -429,6 +425,7 @@ def key_exchange_request(user, receiver):
             shared_key = generate_shared_key(receiver)
             shared_key_c = encrypt_RSA(public_key, shared_key)
             send(user, receiver, SUBJECT_SHARED_KEY, shared_key_c)
+            print(SUBJECT_SHARED_KEY + " sent.\n")
             break
         else:
             break 
@@ -448,7 +445,7 @@ def key_exchange_accept(user, receiver):
     #loop checking if shared key is received
     attempt = 0
     while(True):
-        time.sleep(1)
+        time.sleep(2)
         #print("attemp" + str(attempt))
         body = get_key_from_email(user, receiver, SUBJECT_SHARED_KEY)
         if body == None:
@@ -478,9 +475,6 @@ def check_key(username, suffix):
             return True
     
     return False
-
-
-# In[13]:
 
 
 def main():
@@ -562,10 +556,10 @@ def main():
     return      
 
 
-# In[12]:
+if __name__ == '__main__':
+    main()
 
 
-main()
 
 
 

@@ -1,15 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# #Alice's account
-# username: alicespring2022@gmail.com
-# password: !AliceX2022
-# date of birth: 10/10/1991
-# 
-# #Bob's account
-# username: bobspring2022@gmail.com
-# password: !BobX2022
-# date of birth: 10/10/1991
 
 # In[1]:
 
@@ -39,11 +30,6 @@ from cryptography.exceptions import InvalidSignature
 
 
 ###---CONSTANT---###
-ALICE_USER = 'alicespring2022@gmail.com'
-ALICE_PSWD = '!AliceX2022'
-
-BOB_USER = 'bobspring2022@gmail.com'
-BOB_PSWD = '!BobX2022'
 
 SUBJECT_PREFIX = '[SECUREMAIL]'     #ALL EMAILS NEED THIS PREFIX
 SUBJECT_SHARED_KEY = '[SHARED_KEY]' #EMAIL SENDING SHARED KEY HAS SUBJECT  [SECUREMAIL][SHARED_KEY]
@@ -582,12 +568,5 @@ def main():
 main()
 
 
-# In[ ]:
 
-
-ALICE_USER = 'alicespring2022@gmail.com'
-ALICE_PSWD = '!AliceX2022'
-
-BOB_USER = 'bobspring2022@gmail.com'
-BOB_PSWD = '!BobX2022'
 
